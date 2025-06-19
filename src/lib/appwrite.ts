@@ -1,50 +1,49 @@
-// src/lib/appwrite.ts
 import { cookies } from 'next/headers';
 import { Account, Client, Databases, Storage, Users } from 'node-appwrite';
 import 'server-only';
 
 import { AUTH_COOKIE } from '@/features/auth/constants';
 
-// Function to create the authenticated user session client
+const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
+const project = process.env.NEXT_PUBLIC_APPWRITE_PROJECT;
+const key = process.env.NEXT_APPWRITE_KEY;
+
+// 🛡️ Validate ENV (to avoid undefined 'startsWith' error)
+if (!endpoint) throw new Error('❌ NEXT_PUBLIC_APPWRITE_ENDPOINT is not defined');
+if (!project) throw new Error('❌ NEXT_PUBLIC_APPWRITE_PROJECT is not defined');
+
 export async function createSessionClient() {
-  const client = new Client()
-    .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!) // Set the endpoint
-    .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT!); // Set the project ID
+  const client = new Client().setEndpoint(endpoint).setProject(project);
 
-  // Get session from cookies
   const session = cookies().get(AUTH_COOKIE);
+  if (!session?.value) throw new Error('Unauthorized: Missing auth session.');
 
-  if (!session || !session.value) throw new Error('Unauthorized.');
-
-  // Set session for the client
   client.setSession(session.value);
 
   return {
     get account() {
-      return new Account(client); // Use the Account service
+      return new Account(client);
     },
     get databases() {
-      return new Databases(client); // Use the Databases service
+      return new Databases(client);
     },
     get storage() {
-      return new Storage(client); // Use the Storage service
+      return new Storage(client);
     },
   };
 }
 
-// Function to create the admin client
 export async function createAdminClient() {
-  const client = new Client()
-    .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!) // Set the endpoint
-    .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT!)
-    .setKey(process.env.NEXT_APPWRITE_KEY); // Set admin API key
+  if (!key) throw new Error('❌ NEXT_APPWRITE_KEY is not defined');
+
+  const client = new Client().setEndpoint(endpoint).setProject(project).setKey(key);
 
   return {
     get account() {
-      return new Account(client); // Use the Account service
+      return new Account(client);
     },
     get users() {
-      return new Users(client); // Use the Users service
+      return new Users(client);
     },
   };
 }
